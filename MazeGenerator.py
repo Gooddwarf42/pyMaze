@@ -9,6 +9,7 @@ class TileType(Enum):
     PATH = 1
     WALL = 2
     PLAYER = 3
+    MONSTER = 4
 
 PATHWIDTH = 2
 WIDTH = 10
@@ -16,8 +17,11 @@ HEIGHT = 10
 WALLCHAR = '#'
 TILECHAR = ' '
 PLAYERCHAR = '@'
+MONSTERCHAR = 'M'
 DENSITY = 0.4
 STARTLIFE = 10
+STARTMONSTERLIFE = 4
+NUMMONSTERS = 3
 
 #####################################################
 #                LABYRINTH GENERATION               #
@@ -179,6 +183,9 @@ def RenderMazeLine(line):
         elif tile == TileType.PLAYER:
             l.append(PLAYERCHAR)
             l.append(' ' * (multiplier - 1))
+        elif tile == TileType.MONSTER:
+            l.append(MONSTERCHAR)
+            l.append(' ' * (multiplier - 1))
         else:
             l.append(WALLCHAR * multiplier)
         i += 1
@@ -201,69 +208,74 @@ class Entity():
     def __str__(self):
         return f"Entity - x:{self.posX} y:{self.posY}"
     
-    def MoveUp(self, maze):
+    def MoveTo(self, maze, destX, destY):
         '''
-        Moves the entity up in the passed maze.
-        Returns the type of the tile in which the entity tried to move.
+        Moves the entity in a precise coordinate in the passed maze.
+        Returns
+        -------
+        destTile : TileType
+          the type of the tile in which the entity tried to move.
         '''
-        destTile = maze[self.posY - 1][self.posX]
+        destTile = maze[destY][destX]
         if destTile == TileType.PATH:
             #Move the entity only if the next tile is free
             #Free the current tile
             maze[self.posY][self.posX] = TileType.PATH
             #update position
-            self.posY -= 1
+            self.posX = destX
+            self.posY = destY
             #update the new tile
             maze[self.posY][self.posX] = self.typ
         return destTile
+
+    def MoveUp(self, maze):
+        '''
+        Moves the entity up in the passed maze.
+        Returns
+        -------
+        destTile : TileType
+          the type of the tile in which the entity tried to move.
+        '''
+        destX = self.posX
+        destY = self.posY - 1
+        destTile = self.MoveTo(maze, destX, destY)
+        return destTile, destX, destY
     
     def MoveLeft(self, maze):
         '''
         Moves the entity left in the passed maze.
-        Returns the type of the tile in which the entity tried to move.
+        -------
+        destTile : TileType
+          the type of the tile in which the entity tried to move.
         '''
-        destTile = maze[self.posY][self.posX - 1]
-        if destTile == TileType.PATH:
-            #Move the entity only if the next tile is free
-            #Free the current tile
-            maze[self.posY][self.posX] = TileType.PATH
-            #update position
-            self.posX -= 1
-            #update the new tile
-            maze[self.posY][self.posX] = self.typ
-        return destTile
+        destX = self.posX - 1
+        destY = self.posY
+        destTile = self.MoveTo(maze, destX, destY)
+        return destTile, destX, destY
     
     def MoveDown(self, maze):
         '''
         Moves the entity down in the passed maze.
-        Returns the type of the tile in which the entity tried to move.
+        -------
+        destTile : TileType
+          the type of the tile in which the entity tried to move.
         '''
-        destTile = maze[self.posY + 1][self.posX]
-        if destTile == TileType.PATH:
-            #Move the entity only if the next tile is free
-            #Free the current tile
-            maze[self.posY][self.posX] = TileType.PATH
-            #update position
-            self.posY += 1
-            #update the new tile
-            maze[self.posY][self.posX] = self.typ
-        return destTile
+        destX = self.posX
+        destY = self.posY + 1
+        destTile = self.MoveTo(maze, destX, destY)
+        return destTile, destX, destY
     
     def MoveRight(self, maze):
         '''
         Moves the entity left in the passed maze.
-        Returns the type of the tile in which the entity tried to move.
+        -------
+        destTile : TileType
+          the type of the tile in which the entity tried to move.
         '''
-        destTile = maze[self.posY][self.posX + 1]
-        if destTile == TileType.PATH:
-            #Move the entity only if the next tile is free
-            #Free the current tile
-            maze[self.posY][self.posX] = TileType.PATH
-            #update position
-            self.posX += 1
-            #update the new tile
-            maze[self.posY][self.posX] = self.typ
-        return destTile
+        destX = self.posX + 1
+        destY = self.posY
+        destTile = self.MoveTo(maze, destX, destY)
+        return destTile, destX, destY
             
 
 class Player(Entity):
@@ -274,53 +286,100 @@ class Player(Entity):
 
     def __str__(self):
         return f"{self.typ} - x:{self.posX} y:{self.posY} - LP:{self.life}"
+    
+    def GetsHit(self):
+        self.life -= 1
+    
+class Monster(Entity):
+    typ = TileType.MONSTER
+    def __init__(self, posX, posY, life):
+        super().__init__(posX, posY)
+        self.life = life
+
+    def __str__(self):
+        return f"{self.typ} - x:{self.posX} y:{self.posY} - LP:{self.life}"
+    
+    def GetsHit(self):
+        self.life -= 1
 
 
 #####################################################
 #                    INITIALIZING                   #
 #####################################################
-def InitializeGame(width, height, density, startingLP):
+def InitializeGame(width, height, density, startingLP, numMonsters, monsterStartLP):
     #Generate maze map
     maze = GenerateMaze(width, height, density)
 
     #Get valid initial coordinates for player by repeated tries.
-    #Emulating a do-while loop
-    while True:
-        startX = rnd.randint(1, 2 * width - 1)
-        startY = rnd.randint(1, 2 * height - 1)
-
-        if maze[startY][startX] == TileType.PATH:
-            break 
+    (startX, startY) = GetFreeCoordinates(maze)
 
     #Valid starting coordinates found, initialize player
     #and update map
     player = Player(startX, startY, startingLP)
     maze[startY][startX] = TileType.PLAYER
 
-    return (maze, player)
+    #Generate Monsters
+    monsters = []
+
+    for i in range(numMonsters):
+        (startX, startY) = GetFreeCoordinates(maze)
+        monster = Monster(startX, startY, monsterStartLP)
+        maze[startY][startX] = TileType.MONSTER
+        monsters.append(monster)
+
+
+    return (maze, player, monsters)
+
+def GetFreeCoordinates(maze):
+    totalRows = len(maze)
+    totalCols = len(maze[0])
+    #Emulating a do-while loop
+    while True:
+        startX = rnd.randint(1, totalCols - 2)
+        startY = rnd.randint(1, totalRows - 2)
+
+        if maze[startY][startX] == TileType.PATH:
+            break 
+    
+    return startX, startY
 
 #####################################################
 #              COMMAND MANAGEMENT                   #
 #####################################################
-def Execute(command, maze, player):
+def Execute(command, maze, player, monsters):
     #move up
     if command == "w":
-        destTile = player.MoveUp(maze)
-        print(RenderMaze(maze))
+        destTile, destX, destY = player.MoveUp(maze)
     #move left
     elif command == "a":
-        destTile = player.MoveLeft(maze)
-        print(RenderMaze(maze))
+        destTile, destX, destY = player.MoveLeft(maze)
     #move down
     elif command == "s":
-        destTile = player.MoveDown(maze)
-        print(RenderMaze(maze))
+        destTile, destX, destY = player.MoveDown(maze)
     #move right
     elif command == "d":
-        destTile = player.MoveRight(maze)
-        print(RenderMaze(maze))
+        destTile, destX, destY = player.MoveRight(maze)
     else:
         print("unknown command!")
+        return
+
+    if destTile == TileType.MONSTER:
+        print("Oh, a monster!")
+        for monster in monsters:
+            if monster.posX == destX and monster.posY == destY :
+                monster.GetsHit()
+                KillMonsterIfNeeded(monsters, monster, maze)
+
+                
+                    
+
+def KillMonsterIfNeeded(monsters, monster, maze):
+    if monster.life <= 0:
+        print("You killed a monster!")
+        monsters.remove(monster)
+        print(f"There are {len(monsters)} monsters remaining!")
+        maze[monster.posY][monster.posX] = TileType.PATH
+
 
     
 
@@ -334,7 +393,7 @@ def main():
     print("Type \"exit\" to terminate the execution.")
     print("Initializing game...")
 
-    maze , player = InitializeGame(WIDTH, HEIGHT, DENSITY, STARTLIFE)
+    maze , player, monsters = InitializeGame(WIDTH, HEIGHT, DENSITY, STARTLIFE, NUMMONSTERS, STARTMONSTERLIFE)
     render = RenderMaze(maze)
     print(render)
 
@@ -342,8 +401,17 @@ def main():
         command = input("What to do?")
         if command == "exit":
             break
-        Execute(command, maze, player)
 
+        Execute(command, maze, player, monsters)
+        print(RenderMaze(maze))
+
+        if player.life <= 0:
+            print("Player is dead! Game Over!")
+            break
+
+        if len(monsters) <= 0:
+            print("All monsters are dead! You Win!")
+            break
 
 if __name__== "__main__":
     main()
