@@ -1,15 +1,21 @@
 import random as rnd
+from enum import Enum
 
 rnd.seed()
 
+
+class TileType(Enum):
+    PATH = 1
+    WALL = 2
+
+PATHWIDTH = 2
 WIDTH = 10
 HEIGHT = 10
 WALLCHAR = '#'
-CORRCHAR = ' '
 TILECHAR = ' '
 DENSITY = 0.4
 
-def generateFullRow(length, wallcharacter):
+def generateFullWallRow(length):
     """
     Generate a line full of the selected characters,
     allowing for a number of corridors passed as parameter.
@@ -28,31 +34,12 @@ def generateFullRow(length, wallcharacter):
     """
 
     assert length > 0, "Length value must be > 0" 
+    return [TileType.WALL] * (length * 2 + 1)
 
-    # if I remember correctly, appending with + is not a great idea
-    # better create a list and then join it into a string
-    l = []
 
-    #left wall
-    l.append(wallcharacter)
-    #room for corridors
-    for i in range(length):
-        #tile space
-        l.append(wallcharacter)
-        l.append(wallcharacter)
-        #wall space
-        l.append(wallcharacter)
-    #right wall
-    #l.append(wallcharacter)
-
-    #append neLine
-    l.append('\n')
-
-    return ''.join(l)
-
-def generateRowTiles(length, wallchar, tilechar, corrchar, density):
+def generateRowTiles(length, density):
     """
-    Generate a line of the maze,
+    Generate a line of the maze, (odd lines)
     allowing for a number of corridors passed as parameter.
     Probability of a given tile to be a wall is given by the
     density parameter
@@ -78,29 +65,24 @@ def generateRowTiles(length, wallchar, tilechar, corrchar, density):
     l = []
 
     #left wall
-    l.append(wallchar)
-    #room for corridors
-    for i in range(length -1):
-        l.append(tilechar)
-        l.append(tilechar)
-        
+    l.append(TileType.WALL)
+    
+    #inner columns
+    for i in range(length - 1):
         draw = rnd.random()
-        nextchar = wallchar if draw < density else corrchar
+        nextchar = TileType.WALL if draw < density else TileType.PATH
+        l.append(TileType.PATH)
         l.append(nextchar)
 
     #ensure wall as the rightmost character
-    l.append(tilechar)
-    l.append(tilechar)
-    l.append(wallchar)
+    l.append(TileType.PATH)
+    l.append(TileType.WALL)
 
-    #append neLine
-    l.append('\n')
+    return l
 
-    return ''.join(l)
-
-def generateRowWalls(length, wallchar, corrchar, density):
+def generateRowWalls(length, density):
     """
-    Generate a line of the maze,
+    Generate a line of the maze, (even)
     allowing for a number of corridors passed as parameter.
     Probability of a given tile to be a wall is given by the
     density parameter
@@ -121,29 +103,64 @@ def generateRowWalls(length, wallchar, corrchar, density):
     assert length > 0, "Length value must be > 0" 
     assert 0 <= density and density <= 1, "Invalid density parameter" 
 
-    # if I remember correctly, appending with + is not a great idea
-    # better create a list and then join it into a string
     l = []
 
     #left wall
-    l.append(wallchar)
-    #room for corridors
+    l.append(TileType.WALL)
+
+    #rinner columns
     for i in range(length):      
         draw = rnd.random()
-        nextchar = wallchar if draw < density else corrchar
+        nextchar = TileType.WALL if draw < density else TileType.PATH
         l.append(nextchar)
-        l.append(nextchar)
+        l.append(TileType.WALL)
+    
+    #rightmost wall is already ensured
 
-        l.append(wallchar)
-    #right wall
-    #l.append(wallcharacter)
+    return l
 
-    #append neLine
+def GenerateMaze(width, height, density):
+    #First row is full
+    maze = [generateFullWallRow(width)]
+
+    #Generate inner rows
+    for i in range(height - 1):
+        maze.append(generateRowTiles(width, density))
+        maze.append(generateRowWalls(width, density))
+
+    #Add Last Row
+    maze.append(generateRowTiles(width, density))
+    maze.append(generateFullWallRow(width))
+
+    return maze
+
+def RenderMaze(maze):
+    mazeStr = []
+    for line in maze:
+        mazeStr.append(RenderMazeLine(line))
+    return ''.join(mazeStr)
+
+def RenderMazeLine(line):
+    l = []
+    # mimicking index
+    i = 0
+    for tile in line:
+        multiplier = 2 if i % 2 == 1 else 1
+        if tile == TileType.PATH:
+            l.append(TILECHAR * multiplier) 
+        else:
+            l.append(WALLCHAR * multiplier)
+        i += 1
+    
     l.append('\n')
-
     return ''.join(l)
 
+maze = GenerateMaze(WIDTH, HEIGHT, DENSITY)
+render = RenderMaze(maze)
+print(render)
 
+
+"""
 maze = []
 str = generateFullRow(WIDTH, WALLCHAR)
 maze.append(str)
@@ -162,3 +179,4 @@ maze.append(str)
 
 mazeStr = ''.join(maze)
 print(mazeStr)
+"""
