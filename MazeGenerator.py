@@ -215,7 +215,7 @@ class Entity():
             self.posY -= 1
             #update the new tile
             maze[self.posY][self.posX] = self.typ
-        return maze, destTile
+        return destTile
             
 
 class Player(Entity):
@@ -257,7 +257,7 @@ def InitializeGame(width, height, density, startingLP):
 def Execute(command, maze, player):
     #move up
     if command == "w":
-        maze, destTile = player.MoveUp(maze)
+        destTile = player.MoveUp(maze)
         render = RenderMaze(maze)
         print(render)
     #move left
@@ -272,7 +272,7 @@ def Execute(command, maze, player):
     else:
         print("unknown command!")
 
-    return maze, player
+    
 
 
 #####################################################
@@ -292,7 +292,7 @@ def main():
         command = input("What to do?")
         if command == "exit":
             break
-        maze, player = Execute(command, maze, player)
+        Execute(command, maze, player)
 
 
 if __name__== "__main__":
