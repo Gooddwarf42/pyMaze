@@ -5,6 +5,7 @@ rnd.seed()
 
 
 class TileType(Enum):
+    UNDEFINED = 0
     PATH = 1
     WALL = 2
     PLAYER = 3
@@ -190,21 +191,41 @@ def RenderMazeLine(line):
 #               DEFINING ENTITIES                   #
 #####################################################
 class Entity():
+    #assigning a default TileType
+    typ = TileType.UNDEFINED
+
     def __init__(self, posX, posY):
         self.posX = posX
         self.posY = posY
     
     def __str__(self):
         return f"Entity - x:{self.posX} y:{self.posY}"
+    
+    def MoveUp(self, maze):
+        '''
+        Moves the entity up in the passed maze.
+        Returns the type of the tile in which the entity tried to move.
+        '''
+        destTile = maze[self.posY - 1][self.posX]
+        if destTile == TileType.PATH:
+            #Move the entity only if the next tile is free
+            #Free the current tile
+            maze[self.posY][self.posX] = TileType.PATH
+            #update position
+            self.posY -= 1
+            #update the new tile
+            maze[self.posY][self.posX] = self.typ
+        return maze, destTile
+            
 
 class Player(Entity):
-    char = '@'
+    typ = TileType.PLAYER
     def __init__(self, posX, posY, life):
         super().__init__(posX, posY)
         self.life = life
 
     def __str__(self):
-        return f"Player[{self.char}] - x:{self.posX} y:{self.posY} - LP:{self.life}"
+        return f"{self.typ} - x:{self.posX} y:{self.posY} - LP:{self.life}"
 
 
 #####################################################
@@ -220,24 +241,58 @@ def InitializeGame(width, height, density, startingLP):
         startX = rnd.randint(1, 2 * width - 1)
         startY = rnd.randint(1, 2 * height - 1)
 
-        if maze[startX][startY] == TileType.PATH:
+        if maze[startY][startX] == TileType.PATH:
             break 
 
     #Valid starting coordinates found, initialize player
     #and update map
     player = Player(startX, startY, startingLP)
-    maze[startX][startY] = TileType.PLAYER
+    maze[startY][startX] = TileType.PLAYER
 
     return (maze, player)
+
+#####################################################
+#              COMMAND MANAGEMENT                   #
+#####################################################
+def Execute(command, maze, player):
+    #move up
+    if command == "w":
+        maze, destTile = player.MoveUp(maze)
+        render = RenderMaze(maze)
+        print(render)
+    #move left
+    elif command == "a":
+        print("moving left...")
+    #move down
+    elif command == "s":
+        print("moving down...")
+    #move right
+    elif command == "d":
+        print("moving right...")
+    else:
+        print("unknown command!")
+
+    return maze, player
 
 
 #####################################################
 #                    MAIN SECTION                   #
 #####################################################
 def main():
+    print("Welcome to this simple maze!")
+    print("Type the commands w-a-s-d to move your character")
+    print("Type \"exit\" to terminate the execution.")
+    print("Initializing game...")
+
     maze , player = InitializeGame(WIDTH, HEIGHT, DENSITY, STARTLIFE)
     render = RenderMaze(maze)
     print(render)
+
+    while True:
+        command = input("What to do?")
+        if command == "exit":
+            break
+        maze, player = Execute(command, maze, player)
 
 
 if __name__== "__main__":
