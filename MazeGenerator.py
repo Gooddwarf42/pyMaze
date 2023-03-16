@@ -15,49 +15,47 @@ WALLCHAR = '#'
 TILECHAR = ' '
 DENSITY = 0.4
 
-def generateFullWallRow(length):
+def GenerateFullWallRow(width):
     """
-    Generate a line full of the selected characters,
-    allowing for a number of corridors passed as parameter.
+    Generate a line full walls.
 
     Parameters
     ----------
-    length : int
-        length of the row of characters to generate
-    character : char
-        character to fill the line with
+    width : int
+        width of the labyrinth in which the wall then fits
 
     Returns
     -------
-    line : str
-        the full row
+    line : List<TileType>
+        a list of TileTypes full of wall blocks of the appropriate length for a
+        labyrinth of the given width
     """
 
-    assert length > 0, "Length value must be > 0" 
-    return [TileType.WALL] * (length * 2 + 1)
+    assert width > 0, "Width value must be > 0" 
+    return [TileType.WALL] * (width * 2 + 1)
 
 
-def generateRowTiles(length, density):
+def GenerateRowOdd(width, density):
     """
-    Generate a line of the maze, (odd lines)
-    allowing for a number of corridors passed as parameter.
-    Probability of a given tile to be a wall is given by the
-    density parameter
+    Generate a line of the maze, (odd lines),
+    which have paths in all odd spots and possibly
+    walls in even spots.
+    Chance of having walls is determined by the density parameter.
 
     Parameters
     ----------
-    length : int
-        length of the maze row
-    wallchar : char
-        character used for walls
+    width : int
+        width of the maze row
+    density : float
+        density of the walls. Must be between 0 and 1.
 
     Returns
     -------
-    line : str
-        the row of the maze
+    line : List<TileType>
+        a list of TileTypes describind an odd row of the labyrinth
     """
 
-    assert length > 0, "Length value must be > 0" 
+    assert width > 0, "Width value must be > 0" 
     assert 0 <= density and density <= 1, "Invalid density parameter" 
 
     # if I remember correctly, appending with + is not a great idea
@@ -68,7 +66,7 @@ def generateRowTiles(length, density):
     l.append(TileType.WALL)
     
     #inner columns
-    for i in range(length - 1):
+    for i in range(width - 1):
         draw = rnd.random()
         nextchar = TileType.WALL if draw < density else TileType.PATH
         l.append(TileType.PATH)
@@ -80,24 +78,24 @@ def generateRowTiles(length, density):
 
     return l
 
-def generateRowWalls(length, density):
+def GenerateRowEven(length, density):
     """
     Generate a line of the maze, (even)
-    allowing for a number of corridors passed as parameter.
-    Probability of a given tile to be a wall is given by the
-    density parameter
+    Which has walls in all even spots and possibly
+    walls in the even spots.
+    Chance of having walls is determined by the density parameter.
 
     Parameters
     ----------
-    length : int
-        length of the maze row
-    wallchar : char
-        character used for walls
+    width : int
+        width of the maze row
+    density : float
+        density of the walls. Must be between 0 and 1.
 
     Returns
     -------
-    line : str
-        the row of the maze
+    line : List<TileType>
+        a list of TileTypes describind an even row of the labyrinth
     """
 
     assert length > 0, "Length value must be > 0" 
@@ -120,27 +118,50 @@ def generateRowWalls(length, density):
     return l
 
 def GenerateMaze(width, height, density):
+    """
+    Generates a maze.
+
+    Parameters
+    ----------
+    width : int
+        width of the maze
+    height : int
+        height of the maze
+    density : float
+        density of the walls. Must be between 0 and 1.
+
+    Returns
+    -------
+    maze : List<List<TileType>>
+        matrix of TileTypes describing the labyrinth
+    """
     #First row is full
-    maze = [generateFullWallRow(width)]
+    maze = [GenerateFullWallRow(width)]
 
     #Generate inner rows
     for i in range(height - 1):
-        maze.append(generateRowTiles(width, density))
-        maze.append(generateRowWalls(width, density))
+        maze.append(GenerateRowOdd(width, density))
+        maze.append(GenerateRowEven(width, density))
 
     #Add Last Row
-    maze.append(generateRowTiles(width, density))
-    maze.append(generateFullWallRow(width))
+    maze.append(GenerateRowOdd(width, density))
+    maze.append(GenerateFullWallRow(width))
 
     return maze
 
 def RenderMaze(maze):
+    """
+    Converts a matrix describing a maze into a string
+    """
     mazeStr = []
     for line in maze:
         mazeStr.append(RenderMazeLine(line))
     return ''.join(mazeStr)
 
 def RenderMazeLine(line):
+    """
+    Converts a list describing a maze row into a string, ended by a newline.
+    """
     l = []
     # mimicking index
     i = 0
@@ -158,25 +179,3 @@ def RenderMazeLine(line):
 maze = GenerateMaze(WIDTH, HEIGHT, DENSITY)
 render = RenderMaze(maze)
 print(render)
-
-
-"""
-maze = []
-str = generateFullRow(WIDTH, WALLCHAR)
-maze.append(str)
-for i in range(HEIGHT - 1):
-    str = generateRowTiles(WIDTH, WALLCHAR, TILECHAR, CORRCHAR, DENSITY)
-    maze.append(str)
-    str = generateRowWalls(WIDTH, WALLCHAR, CORRCHAR, DENSITY)
-    maze.append(str)
-
-#last row
-str = generateRowTiles(WIDTH, WALLCHAR, TILECHAR, CORRCHAR, DENSITY)
-maze.append(str)
-str = generateFullRow(WIDTH, WALLCHAR)
-maze.append(str)
-
-
-mazeStr = ''.join(maze)
-print(mazeStr)
-"""
