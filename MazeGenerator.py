@@ -216,6 +216,54 @@ class Entity():
             #update the new tile
             maze[self.posY][self.posX] = self.typ
         return destTile
+    
+    def MoveLeft(self, maze):
+        '''
+        Moves the entity left in the passed maze.
+        Returns the type of the tile in which the entity tried to move.
+        '''
+        destTile = maze[self.posY][self.posX - 1]
+        if destTile == TileType.PATH:
+            #Move the entity only if the next tile is free
+            #Free the current tile
+            maze[self.posY][self.posX] = TileType.PATH
+            #update position
+            self.posX -= 1
+            #update the new tile
+            maze[self.posY][self.posX] = self.typ
+        return destTile
+    
+    def MoveDown(self, maze):
+        '''
+        Moves the entity down in the passed maze.
+        Returns the type of the tile in which the entity tried to move.
+        '''
+        destTile = maze[self.posY + 1][self.posX]
+        if destTile == TileType.PATH:
+            #Move the entity only if the next tile is free
+            #Free the current tile
+            maze[self.posY][self.posX] = TileType.PATH
+            #update position
+            self.posY += 1
+            #update the new tile
+            maze[self.posY][self.posX] = self.typ
+        return destTile
+    
+    def MoveRight(self, maze):
+        '''
+        Moves the entity left in the passed maze.
+        Returns the type of the tile in which the entity tried to move.
+        '''
+        destTile = maze[self.posY][self.posX + 1]
+        if destTile == TileType.PATH:
+            #Move the entity only if the next tile is free
+            #Free the current tile
+            maze[self.posY][self.posX] = TileType.PATH
+            #update position
+            self.posX += 1
+            #update the new tile
+            maze[self.posY][self.posX] = self.typ
+        return destTile
             
 
 class Player(Entity):
@@ -258,17 +306,19 @@ def Execute(command, maze, player):
     #move up
     if command == "w":
         destTile = player.MoveUp(maze)
-        render = RenderMaze(maze)
-        print(render)
+        print(RenderMaze(maze))
     #move left
     elif command == "a":
-        print("moving left...")
+        destTile = player.MoveLeft(maze)
+        print(RenderMaze(maze))
     #move down
     elif command == "s":
-        print("moving down...")
+        destTile = player.MoveDown(maze)
+        print(RenderMaze(maze))
     #move right
     elif command == "d":
-        print("moving right...")
+        destTile = player.MoveRight(maze)
+        print(RenderMaze(maze))
     else:
         print("unknown command!")
 
