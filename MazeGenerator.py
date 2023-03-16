@@ -7,14 +7,20 @@ rnd.seed()
 class TileType(Enum):
     PATH = 1
     WALL = 2
+    PLAYER = 3
 
 PATHWIDTH = 2
 WIDTH = 10
 HEIGHT = 10
 WALLCHAR = '#'
 TILECHAR = ' '
+PLAYERCHAR = '@'
 DENSITY = 0.4
+STARTLIFE = 10
 
+#####################################################
+#                LABYRINTH GENERATION               #
+#####################################################
 def GenerateFullWallRow(width):
     """
     Generate a line full walls.
@@ -169,6 +175,9 @@ def RenderMazeLine(line):
         multiplier = 2 if i % 2 == 1 else 1
         if tile == TileType.PATH:
             l.append(TILECHAR * multiplier) 
+        elif tile == TileType.PLAYER:
+            l.append(PLAYERCHAR)
+            l.append(' ' * (multiplier - 1))
         else:
             l.append(WALLCHAR * multiplier)
         i += 1
@@ -176,6 +185,60 @@ def RenderMazeLine(line):
     l.append('\n')
     return ''.join(l)
 
-maze = GenerateMaze(WIDTH, HEIGHT, DENSITY)
-render = RenderMaze(maze)
-print(render)
+
+#####################################################
+#               DEFINING ENTITIES                   #
+#####################################################
+class Entity():
+    def __init__(self, posX, posY):
+        self.posX = posX
+        self.posY = posY
+    
+    def __str__(self):
+        return f"Entity - x:{self.posX} y:{self.posY}"
+
+class Player(Entity):
+    char = '@'
+    def __init__(self, posX, posY, life):
+        super().__init__(posX, posY)
+        self.life = life
+
+    def __str__(self):
+        return f"Player[{self.char}] - x:{self.posX} y:{self.posY} - LP:{self.life}"
+
+
+#####################################################
+#                    INITIALIZING                   #
+#####################################################
+def InitializeGame(width, height, density, startingLP):
+    #Generate maze map
+    maze = GenerateMaze(width, height, density)
+
+    #Get valid initial coordinates for player by repeated tries.
+    #Emulating a do-while loop
+    while True:
+        startX = rnd.randint(1, 2 * width - 1)
+        startY = rnd.randint(1, 2 * height - 1)
+
+        if maze[startX][startY] == TileType.PATH:
+            break 
+
+    #Valid starting coordinates found, initialize player
+    #and update map
+    player = Player(startX, startY, startingLP)
+    maze[startX][startY] = TileType.PLAYER
+
+    return (maze, player)
+
+
+#####################################################
+#                    MAIN SECTION                   #
+#####################################################
+def main():
+    maze , player = InitializeGame(WIDTH, HEIGHT, DENSITY, STARTLIFE)
+    render = RenderMaze(maze)
+    print(render)
+
+
+if __name__== "__main__":
+    main()
