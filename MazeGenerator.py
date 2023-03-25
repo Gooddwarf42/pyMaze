@@ -11,6 +11,7 @@ class TileType(Enum):
     PLAYER = 3
     MONSTER = 4
 
+
 PATHWIDTH = 2
 WIDTH = 10
 HEIGHT = 10
@@ -26,6 +27,8 @@ NUMMONSTERS = 3
 #####################################################
 #                LABYRINTH GENERATION               #
 #####################################################
+
+
 def GenerateFullWallRow(width):
     """
     Generate a line full walls.
@@ -42,7 +45,7 @@ def GenerateFullWallRow(width):
         labyrinth of the given width
     """
 
-    assert width > 0, "Width value must be > 0" 
+    assert width > 0, "Width value must be > 0"
     return [TileType.WALL] * (width * 2 + 1)
 
 
@@ -66,28 +69,29 @@ def GenerateRowOdd(width, density):
         a list of TileTypes describind an odd row of the labyrinth
     """
 
-    assert width > 0, "Width value must be > 0" 
-    assert 0 <= density and density <= 1, "Invalid density parameter" 
+    assert width > 0, "Width value must be > 0"
+    assert 0 <= density and density <= 1, "Invalid density parameter"
 
     # if I remember correctly, appending with + is not a great idea
     # better create a list and then join it into a string
     l = []
 
-    #left wall
+    # left wall
     l.append(TileType.WALL)
-    
-    #inner columns
+
+    # inner columns
     for i in range(width - 1):
         draw = rnd.random()
         nextchar = TileType.WALL if draw < density else TileType.PATH
         l.append(TileType.PATH)
         l.append(nextchar)
 
-    #ensure wall as the rightmost character
+    # ensure wall as the rightmost character
     l.append(TileType.PATH)
     l.append(TileType.WALL)
 
     return l
+
 
 def GenerateRowEven(length, density):
     """
@@ -109,24 +113,25 @@ def GenerateRowEven(length, density):
         a list of TileTypes describind an even row of the labyrinth
     """
 
-    assert length > 0, "Length value must be > 0" 
-    assert 0 <= density and density <= 1, "Invalid density parameter" 
+    assert length > 0, "Length value must be > 0"
+    assert 0 <= density and density <= 1, "Invalid density parameter"
 
     l = []
 
-    #left wall
+    # left wall
     l.append(TileType.WALL)
 
-    #rinner columns
-    for i in range(length):      
+    # rinner columns
+    for i in range(length):
         draw = rnd.random()
         nextchar = TileType.WALL if draw < density else TileType.PATH
         l.append(nextchar)
         l.append(TileType.WALL)
-    
-    #rightmost wall is already ensured
+
+    # rightmost wall is already ensured
 
     return l
+
 
 def GenerateMaze(width, height, density):
     """
@@ -146,19 +151,20 @@ def GenerateMaze(width, height, density):
     maze : List<List<TileType>>
         matrix of TileTypes describing the labyrinth
     """
-    #First row is full
+    # First row is full
     maze = [GenerateFullWallRow(width)]
 
-    #Generate inner rows
+    # Generate inner rows
     for i in range(height - 1):
         maze.append(GenerateRowOdd(width, density))
         maze.append(GenerateRowEven(width, density))
 
-    #Add Last Row
+    # Add Last Row
     maze.append(GenerateRowOdd(width, density))
     maze.append(GenerateFullWallRow(width))
 
     return maze
+
 
 def RenderMaze(maze):
     """
@@ -168,6 +174,7 @@ def RenderMaze(maze):
     for line in maze:
         mazeStr.append(RenderMazeLine(line))
     return ''.join(mazeStr)
+
 
 def RenderMazeLine(line):
     """
@@ -179,7 +186,7 @@ def RenderMazeLine(line):
     for tile in line:
         multiplier = 2 if i % 2 == 1 else 1
         if tile == TileType.PATH:
-            l.append(TILECHAR * multiplier) 
+            l.append(TILECHAR * multiplier)
         elif tile == TileType.PLAYER:
             l.append(PLAYERCHAR)
             l.append(' ' * (multiplier - 1))
@@ -189,7 +196,7 @@ def RenderMazeLine(line):
         else:
             l.append(WALLCHAR * multiplier)
         i += 1
-    
+
     l.append('\n')
     return ''.join(l)
 
@@ -198,16 +205,16 @@ def RenderMazeLine(line):
 #               DEFINING ENTITIES                   #
 #####################################################
 class Entity():
-    #assigning a default TileType
+    # assigning a default TileType
     typ = TileType.UNDEFINED
 
     def __init__(self, posX, posY):
         self.posX = posX
         self.posY = posY
-    
+
     def __str__(self):
         return f"Entity - x:{self.posX} y:{self.posY}"
-    
+
     def MoveTo(self, maze, destX, destY):
         '''
         Moves the entity in a precise coordinate in the passed maze.
@@ -218,13 +225,13 @@ class Entity():
         '''
         destTile = maze[destY][destX]
         if destTile == TileType.PATH:
-            #Move the entity only if the next tile is free
-            #Free the current tile
+            # Move the entity only if the next tile is free
+            # Free the current tile
             maze[self.posY][self.posX] = TileType.PATH
-            #update position
+            # update position
             self.posX = destX
             self.posY = destY
-            #update the new tile
+            # update the new tile
             maze[self.posY][self.posX] = self.typ
         return destTile
 
@@ -240,7 +247,7 @@ class Entity():
         destY = self.posY - 1
         destTile = self.MoveTo(maze, destX, destY)
         return destTile, destX, destY
-    
+
     def MoveLeft(self, maze):
         '''
         Moves the entity left in the passed maze.
@@ -252,7 +259,7 @@ class Entity():
         destY = self.posY
         destTile = self.MoveTo(maze, destX, destY)
         return destTile, destX, destY
-    
+
     def MoveDown(self, maze):
         '''
         Moves the entity down in the passed maze.
@@ -264,7 +271,7 @@ class Entity():
         destY = self.posY + 1
         destTile = self.MoveTo(maze, destX, destY)
         return destTile, destX, destY
-    
+
     def MoveRight(self, maze):
         '''
         Moves the entity left in the passed maze.
@@ -276,29 +283,32 @@ class Entity():
         destY = self.posY
         destTile = self.MoveTo(maze, destX, destY)
         return destTile, destX, destY
-            
+
 
 class Player(Entity):
     typ = TileType.PLAYER
+
     def __init__(self, posX, posY, life):
         super().__init__(posX, posY)
         self.life = life
 
     def __str__(self):
         return f"{self.typ} - x:{self.posX} y:{self.posY} - LP:{self.life}"
-    
+
     def GetsHit(self):
         self.life -= 1
-    
+
+
 class Monster(Entity):
     typ = TileType.MONSTER
+
     def __init__(self, posX, posY, life):
         super().__init__(posX, posY)
         self.life = life
 
     def __str__(self):
         return f"{self.typ} - x:{self.posX} y:{self.posY} - LP:{self.life}"
-    
+
     def GetsHit(self):
         self.life -= 1
 
@@ -307,18 +317,18 @@ class Monster(Entity):
 #                    INITIALIZING                   #
 #####################################################
 def InitializeGame(width, height, density, startingLP, numMonsters, monsterStartLP):
-    #Generate maze map
+    # Generate maze map
     maze = GenerateMaze(width, height, density)
 
-    #Get valid initial coordinates for player by repeated tries.
+    # Get valid initial coordinates for player by repeated tries.
     (startX, startY) = GetFreeCoordinates(maze)
 
-    #Valid starting coordinates found, initialize player
-    #and update map
+    # Valid starting coordinates found, initialize player
+    # and update map
     player = Player(startX, startY, startingLP)
     maze[startY][startX] = TileType.PLAYER
 
-    #Generate Monsters
+    # Generate Monsters
     monsters = []
 
     for i in range(numMonsters):
@@ -327,36 +337,38 @@ def InitializeGame(width, height, density, startingLP, numMonsters, monsterStart
         maze[startY][startX] = TileType.MONSTER
         monsters.append(monster)
 
-
     return (maze, player, monsters)
+
 
 def GetFreeCoordinates(maze):
     totalRows = len(maze)
     totalCols = len(maze[0])
-    #Emulating a do-while loop
+    # Emulating a do-while loop
     while True:
         startX = rnd.randint(1, totalCols - 2)
         startY = rnd.randint(1, totalRows - 2)
 
         if maze[startY][startX] == TileType.PATH:
-            break 
-    
+            break
+
     return startX, startY
 
 #####################################################
 #              COMMAND MANAGEMENT                   #
 #####################################################
+
+
 def Execute(command, maze, player, monsters):
-    #move up
+    # move up
     if command == "w":
         destTile, destX, destY = player.MoveUp(maze)
-    #move left
+    # move left
     elif command == "a":
         destTile, destX, destY = player.MoveLeft(maze)
-    #move down
+    # move down
     elif command == "s":
         destTile, destX, destY = player.MoveDown(maze)
-    #move right
+    # move right
     elif command == "d":
         destTile, destX, destY = player.MoveRight(maze)
     else:
@@ -366,12 +378,10 @@ def Execute(command, maze, player, monsters):
     if destTile == TileType.MONSTER:
         print("Oh, a monster!")
         for monster in monsters:
-            if monster.posX == destX and monster.posY == destY :
+            if monster.posX == destX and monster.posY == destY:
                 monster.GetsHit()
                 KillMonsterIfNeeded(monsters, monster, maze)
 
-                
-                    
 
 def KillMonsterIfNeeded(monsters, monster, maze):
     if monster.life <= 0:
@@ -379,9 +389,6 @@ def KillMonsterIfNeeded(monsters, monster, maze):
         monsters.remove(monster)
         print(f"There are {len(monsters)} monsters remaining!")
         maze[monster.posY][monster.posX] = TileType.PATH
-
-
-    
 
 
 #####################################################
@@ -393,7 +400,8 @@ def main():
     print("Type \"exit\" to terminate the execution.")
     print("Initializing game...")
 
-    maze , player, monsters = InitializeGame(WIDTH, HEIGHT, DENSITY, STARTLIFE, NUMMONSTERS, STARTMONSTERLIFE)
+    maze, player, monsters = InitializeGame(
+        WIDTH, HEIGHT, DENSITY, STARTLIFE, NUMMONSTERS, STARTMONSTERLIFE)
     render = RenderMaze(maze)
     print(render)
 
@@ -413,5 +421,6 @@ def main():
             print("All monsters are dead! You Win!")
             break
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     main()
