@@ -200,10 +200,58 @@ def RenderMazeLine(line):
     l.append('\n')
     return ''.join(l)
 
+#####################################################
+#               VARIOUS MAZE FUNCTIONS              #
+#  TODO: maaybe make a maze class sooner or later   #
+#####################################################
 
-#####################################################
-#               DEFINING ENTITIES                   #
-#####################################################
+
+def GetMazeWidth(maze):
+    '''
+    Returns the total number of columns of the maze,
+    outer walls included
+    '''
+    return len(maze)
+
+
+def GetMazeHeight(maze):
+    '''
+    Returns the total number of rows of the maze,
+    outer walls included
+    '''
+    return len(maze[0])
+
+
+def IsCoordinateInBound(maze, x, y):
+    '''
+    Returns true if the coordinates are in the maze,
+    outer walls included
+    '''
+    totalRows = GetMazeWidth(maze)
+    totalCols = GetMazeHeight(maze)
+
+    return (0 <= x
+            and x <= totalCols - 1
+            and 0 <= y
+            and y <= totalRows - 1)
+
+
+def GenerateInternalCoordinate(maze):
+    '''
+    Generates random coordinates in the internal of
+    the maze (outer walls excluded)
+    '''
+    totalRows = GetMazeWidth(maze)
+    totalCols = GetMazeHeight(maze)
+    genX = rnd.randint(1, totalCols - 2)
+    genY = rnd.randint(1, totalRows - 2)
+    return genX, genY
+
+    #####################################################
+    #               DEFINING ENTITIES                   #
+    #####################################################
+
+
 class Entity():
     # assigning a default TileType
     typ = TileType.UNDEFINED
@@ -223,6 +271,13 @@ class Entity():
         destTile : TileType
           the type of the tile in which the entity tried to move.
         '''
+
+        # Check if destination tile is valid
+        if not IsCoordinateInBound(maze, destX, destY):
+            print("Invalid movement!")
+            destTile = maze[self.posY][self.posX]
+            return destTile
+
         destTile = maze[destY][destX]
         if destTile == TileType.PATH:
             # Move the entity only if the next tile is free
@@ -235,52 +290,21 @@ class Entity():
             maze[self.posY][self.posX] = self.typ
         return destTile
 
-    def MoveUp(self, maze):
+    def MoveRel(self, maze, movX, movY):
         '''
-        Moves the entity up in the passed maze.
+        Moves the entity in the passed maze horizontally and vertically
+        of the given amount of tiles.
         Returns
         -------
         destTile : TileType
           the type of the tile in which the entity tried to move.
         '''
-        destX = self.posX
-        destY = self.posY - 1
-        destTile = self.MoveTo(maze, destX, destY)
-        return destTile, destX, destY
+        destX = self.posX + movX
+        destY = self.posY + movY
 
-    def MoveLeft(self, maze):
-        '''
-        Moves the entity left in the passed maze.
-        -------
-        destTile : TileType
-          the type of the tile in which the entity tried to move.
-        '''
-        destX = self.posX - 1
-        destY = self.posY
-        destTile = self.MoveTo(maze, destX, destY)
-        return destTile, destX, destY
+        # Check if the movement is safe is done in the
+        # MoveTo function!
 
-    def MoveDown(self, maze):
-        '''
-        Moves the entity down in the passed maze.
-        -------
-        destTile : TileType
-          the type of the tile in which the entity tried to move.
-        '''
-        destX = self.posX
-        destY = self.posY + 1
-        destTile = self.MoveTo(maze, destX, destY)
-        return destTile, destX, destY
-
-    def MoveRight(self, maze):
-        '''
-        Moves the entity left in the passed maze.
-        -------
-        destTile : TileType
-          the type of the tile in which the entity tried to move.
-        '''
-        destX = self.posX + 1
-        destY = self.posY
         destTile = self.MoveTo(maze, destX, destY)
         return destTile, destX, destY
 
@@ -341,12 +365,9 @@ def InitializeGame(width, height, density, startingLP, numMonsters, monsterStart
 
 
 def GetFreeCoordinates(maze):
-    totalRows = len(maze)
-    totalCols = len(maze[0])
     # Emulating a do-while loop
     while True:
-        startX = rnd.randint(1, totalCols - 2)
-        startY = rnd.randint(1, totalRows - 2)
+        startX, startY = GenerateInternalCoordinate(maze)
 
         if maze[startY][startX] == TileType.PATH:
             break
@@ -361,16 +382,16 @@ def GetFreeCoordinates(maze):
 def Execute(command, maze, player, monsters):
     # move up
     if command == "w":
-        destTile, destX, destY = player.MoveUp(maze)
+        destTile, destX, destY = player.MoveRel(maze, 0, -1)
     # move left
     elif command == "a":
-        destTile, destX, destY = player.MoveLeft(maze)
+        destTile, destX, destY = player.MoveRel(maze, -1, 0)
     # move down
     elif command == "s":
-        destTile, destX, destY = player.MoveDown(maze)
+        destTile, destX, destY = player.MoveRel(maze, 0, 1)
     # move right
     elif command == "d":
-        destTile, destX, destY = player.MoveRight(maze)
+        destTile, destX, destY = player.MoveRel(maze, 1, 0)
     else:
         print("unknown command!")
         return
